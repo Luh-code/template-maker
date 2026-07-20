@@ -77,6 +77,9 @@ interface DesignStore {
 
   setSelectedTile: (tileId: string | null) => void;
   setSelectedTextLayer: (layerId: string | null) => void;
+  /** Selects a text field AND surfaces its editor panel — used by the
+   * explicit edit-icon, unlike plain selection from tapping/dragging. */
+  openTextEditor: (layerId: string) => void;
   setMobilePanel: (panel: "left" | "right" | null) => void;
   setLeftPanelTab: (tab: LeftPanelTab) => void;
   toggleEditorTheme: () => void;
@@ -343,14 +346,19 @@ export const useDesignStore = create<DesignStore>()(
           mobilePanel: tileId ? "right" : s.mobilePanel,
         })),
       setSelectedTextLayer: (layerId) =>
-        set((s) => ({
+        set({
           selectedTextLayerId: layerId,
           selectedTileId: null,
-          // Text controls live in the left sidebar's "Text" tab, not a
-          // separate panel — surface that instead of the right sheet.
-          mobilePanel: layerId ? "left" : s.mobilePanel,
-          leftPanelTab: layerId ? "text" : s.leftPanelTab,
-        })),
+        }),
+      openTextEditor: (layerId) =>
+        set({
+          selectedTextLayerId: layerId,
+          selectedTileId: null,
+          // Only an explicit "edit" action surfaces the panel — merely
+          // selecting/dragging the text on canvas should not pop anything up.
+          mobilePanel: "left",
+          leftPanelTab: "text",
+        }),
       setMobilePanel: (panel) => set({ mobilePanel: panel }),
       setLeftPanelTab: (tab) => set({ leftPanelTab: tab }),
       toggleEditorTheme: () =>

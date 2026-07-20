@@ -1,6 +1,7 @@
 "use client";
 
 import { useContext, useRef } from "react";
+import { Pencil } from "lucide-react";
 import { useDesignStore } from "@/store/design-store";
 import { MatRefContext, DESIGN_WIDTH } from "./frame-canvas";
 import { FONT_OPTIONS } from "@/types";
@@ -14,19 +15,20 @@ const DEFAULT_WIDTH_PERCENT = 34;
  * `MatRefContext`), so dragging stays accurate no matter how much the
  * preview is currently scaled down for the viewport.
  *
- * This is display + drag only — there is no on-canvas editing. Typing the
- * words happens in the "Selected text" panel instead. An editable overlay
- * directly on the canvas is fighting mobile browsers' native text-selection
- * UI (the long-press callout, the Cut/Copy/Paste bubble on focus) no matter
- * how many touch-action/user-select/preventDefault layers are stacked on
- * it; keeping the actual `<textarea>` in the ordinary sidebar/sheet avoids
- * that entire class of problem since it's just a normal input in a normal
- * document, not an overlay on a transformed canvas.
+ * Selecting it (tap/drag) never opens anything by itself — only the small
+ * edit (pencil) button that appears once selected surfaces the "Text" panel.
+ * Typing the words always happens there, never on the canvas: an editable
+ * overlay directly on the frame fights mobile browsers' native
+ * text-selection UI (the long-press callout, the Cut/Copy/Paste bubble on
+ * focus) no matter how it's configured, since it's an input sitting on an
+ * absolutely-positioned, CSS-transformed surface rather than in ordinary
+ * document flow.
  */
 export function TextLayer({ layerId }: { layerId: string }) {
   const layer = useDesignStore((s) => s.design.textLayers.find((l) => l.id === layerId));
   const isSelected = useDesignStore((s) => s.selectedTextLayerId === layerId);
   const setSelectedTextLayer = useDesignStore((s) => s.setSelectedTextLayer);
+  const openTextEditor = useDesignStore((s) => s.openTextEditor);
   const updateTextLayerLive = useDesignStore((s) => s.updateTextLayerLive);
   const beginInteraction = useDesignStore((s) => s.beginInteraction);
   const endInteraction = useDesignStore((s) => s.endInteraction);
@@ -91,7 +93,22 @@ export function TextLayer({ layerId }: { layerId: string }) {
         WebkitTouchCallout: "none",
       }}
     >
-      {layer.content || "Tap to select, then type in the panel"}
+      {layer.content || "Tap to select, then edit it"}
+      {isSelected && (
+        <button
+          type="button"
+          aria-label="Edit text"
+          title="Edit text"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            openTextEditor(layerId);
+          }}
+          className="pointer-events-auto absolute -right-3 -top-3 z-10 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-amber-400 bg-white text-amber-600 shadow hover:bg-amber-50"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+      )}
     </div>
   );
 }
