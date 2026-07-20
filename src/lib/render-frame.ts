@@ -272,6 +272,30 @@ function drawSpotify(
   ctx.globalAlpha = 1;
 }
 
+/** Wraps text into lines no wider than `maxWidth`, honoring the user's own line breaks. */
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const lines: string[] = [];
+  for (const paragraph of text.split("\n")) {
+    if (paragraph === "") {
+      lines.push("");
+      continue;
+    }
+    const words = paragraph.split(" ");
+    let currentLine = words[0] ?? "";
+    for (let i = 1; i < words.length; i++) {
+      const candidate = `${currentLine} ${words[i]}`;
+      if (currentLine && ctx.measureText(candidate).width > maxWidth) {
+        lines.push(currentLine);
+        currentLine = words[i];
+      } else {
+        currentLine = candidate;
+      }
+    }
+    lines.push(currentLine);
+  }
+  return lines;
+}
+
 function drawTextLayers(
   ctx: CanvasRenderingContext2D,
   width: number,
@@ -283,15 +307,27 @@ function drawTextLayers(
     if (!layer.content.trim()) continue;
     const x = (layer.xPercent / 100) * width;
     const y = (layer.yPercent / 100) * height;
+    const maxWidth = ((layer.width ?? 34) / 100) * width;
+    const align = layer.align ?? "center";
+    const fontSizePx = layer.fontSize * scale;
+    const lineHeight = fontSizePx * 1.3;
 
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate((layer.rotation * Math.PI) / 180);
     ctx.fillStyle = layer.color;
-    ctx.font = `${layer.bold ? "700" : "400"} ${layer.fontSize * scale}px ${canvasFontStack(layer.font)}`;
-    ctx.textAlign = "center";
+    ctx.font = `${layer.bold ? "700" : "400"} ${fontSizePx}px ${canvasFontStack(layer.font)}`;
+    ctx.textAlign = align;
     ctx.textBaseline = "middle";
-    ctx.fillText(layer.content, 0, 0);
+
+    const lines = wrapText(ctx, layer.content, maxWidth);
+    const totalHeight = lines.length * lineHeight;
+    const startY = -totalHeight / 2 + lineHeight / 2;
+    const lineX = align === "left" ? -maxWidth / 2 : align === "right" ? maxWidth / 2 : 0;
+
+    lines.forEach((line, i) => {
+      ctx.fillText(line, lineX, startY + i * lineHeight);
+    });
     ctx.restore();
   }
 }

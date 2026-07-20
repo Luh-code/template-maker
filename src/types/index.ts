@@ -68,16 +68,20 @@ export interface FrameStyle {
 /** A free-floating, user-placed text field anywhere on the frame. */
 export interface TextLayerData {
   id: string;
+  /** May contain newlines; long lines also word-wrap within `width`. */
   content: string;
   /** Center position as a percentage of the printable mat, 0-100. */
   xPercent: number;
   yPercent: number;
+  /** Wrap width as a percentage of the mat's width, 0-100. */
+  width: number;
   /** Font size in px, authored against the same 1200px-wide reference frame as everything else. */
   fontSize: number;
   color: string;
   font: FontId;
   bold: boolean;
   rotation: number;
+  align: "left" | "center" | "right";
 }
 
 /** The full serializable state of a design, snapshotted for undo/redo. */

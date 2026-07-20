@@ -26,6 +26,13 @@ interface DesignStore {
   editorTheme: "light" | "dark";
   selectedTileId: string | null;
   selectedTextLayerId: string | null;
+  /** Text layer currently in inline-edit mode, settable from the on-canvas
+   * double-click/tap or from an explicit "Edit words" button (needed since
+   * double-tap-to-edit isn't reliable on every mobile browser). */
+  editingTextLayerId: string | null;
+  /** Which mobile/tablet bottom sheet is open (irrelevant on desktop, where
+   * both sidebars are always visible and this is simply never read). */
+  mobilePanel: "left" | "right" | null;
   fullscreenPreview: boolean;
   hasHydrated: boolean;
 
@@ -68,6 +75,8 @@ interface DesignStore {
 
   setSelectedTile: (tileId: string | null) => void;
   setSelectedTextLayer: (layerId: string | null) => void;
+  setEditingTextLayer: (layerId: string | null) => void;
+  setMobilePanel: (panel: "left" | "right" | null) => void;
   toggleEditorTheme: () => void;
   setFullscreenPreview: (value: boolean) => void;
   setHasHydrated: (value: boolean) => void;
@@ -83,6 +92,8 @@ export const useDesignStore = create<DesignStore>()(
       editorTheme: "light",
       selectedTileId: null,
       selectedTextLayerId: null,
+      editingTextLayerId: null,
+      mobilePanel: null,
       fullscreenPreview: false,
       hasHydrated: false,
 
@@ -282,15 +293,22 @@ export const useDesignStore = create<DesignStore>()(
               content: "Double-click to edit",
               xPercent: 50,
               yPercent: 50,
+              width: 34,
               fontSize: 28,
               color: d.text.color,
               font: d.text.font,
               bold: false,
               rotation: 0,
+              align: "center",
             },
           ],
         }));
-        set({ selectedTextLayerId: id, selectedTileId: null });
+        set({
+          selectedTextLayerId: id,
+          editingTextLayerId: id,
+          selectedTileId: null,
+          mobilePanel: "right",
+        });
       },
 
       updateTextLayerLive: (layerId, patch) => {
@@ -307,11 +325,35 @@ export const useDesignStore = create<DesignStore>()(
           ...d,
           textLayers: d.textLayers.filter((layer) => layer.id !== layerId),
         }));
-        set((s) => (s.selectedTextLayerId === layerId ? { selectedTextLayerId: null } : s));
+        set((s) => ({
+          selectedTextLayerId: s.selectedTextLayerId === layerId ? null : s.selectedTextLayerId,
+          editingTextLayerId: s.editingTextLayerId === layerId ? null : s.editingTextLayerId,
+        }));
       },
 
-      setSelectedTile: (tileId) => set({ selectedTileId: tileId, selectedTextLayerId: null }),
-      setSelectedTextLayer: (layerId) => set({ selectedTextLayerId: layerId, selectedTileId: null }),
+      setSelectedTile: (tileId) =>
+        set((s) => ({
+          selectedTileId: tileId,
+          selectedTextLayerId: null,
+          editingTextLayerId: null,
+          // Surface the mobile sheet when selecting something (there's
+          // nothing to switch to on desktop, where this field is unused).
+          mobilePanel: tileId ? "right" : s.mobilePanel,
+        })),
+      setSelectedTextLayer: (layerId) =>
+        set((s) => ({
+          selectedTextLayerId: layerId,
+          selectedTileId: null,
+          mobilePanel: layerId ? "right" : s.mobilePanel,
+        })),
+      setEditingTextLayer: (layerId) =>
+        set((s) => ({
+          editingTextLayerId: layerId,
+          selectedTextLayerId: layerId ?? s.selectedTextLayerId,
+          selectedTileId: layerId ? null : s.selectedTileId,
+          mobilePanel: layerId ? "right" : s.mobilePanel,
+        })),
+      setMobilePanel: (panel) => set({ mobilePanel: panel }),
       toggleEditorTheme: () =>
         set((s) => ({ editorTheme: s.editorTheme === "light" ? "dark" : "light" })),
       setFullscreenPreview: (value) => set({ fullscreenPreview: value }),

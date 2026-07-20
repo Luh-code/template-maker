@@ -1,30 +1,49 @@
 "use client";
 
-import { useContext, useRef, useState } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { useDesignStore } from "@/store/design-store";
-import { MatRefContext } from "./frame-canvas";
+import { MatRefContext, DESIGN_WIDTH } from "./frame-canvas";
 import { FONT_OPTIONS } from "@/types";
 import { clamp, cn } from "@/lib/utils";
+
+const DEFAULT_WIDTH_PERCENT = 34;
 
 /**
  * A free-floating text field the user can drag anywhere on the frame.
  * Position is tracked as a percentage of the mat's real on-screen box (via
  * `MatRefContext`), so dragging stays accurate no matter how much the
- * preview is currently scaled down for the viewport.
+ * preview is currently scaled down for the viewport. Content wraps as a
+ * paragraph within `width` rather than running on in a single line.
+ *
+ * Edit mode lives in the store (`editingTextLayerId`), not local state, so
+ * it can also be triggered from the "Edit words" button in the sidebar —
+ * double-tap-to-edit alone isn't reliable across all mobile browsers.
  */
 export function TextLayer({ layerId }: { layerId: string }) {
   const layer = useDesignStore((s) => s.design.textLayers.find((l) => l.id === layerId));
   const isSelected = useDesignStore((s) => s.selectedTextLayerId === layerId);
+  const isEditing = useDesignStore((s) => s.editingTextLayerId === layerId);
   const setSelectedTextLayer = useDesignStore((s) => s.setSelectedTextLayer);
+  const setEditingTextLayer = useDesignStore((s) => s.setEditingTextLayer);
   const updateTextLayerLive = useDesignStore((s) => s.updateTextLayerLive);
   const beginInteraction = useDesignStore((s) => s.beginInteraction);
   const endInteraction = useDesignStore((s) => s.endInteraction);
   const matRef = useContext(MatRefContext);
-  const [isEditing, setIsEditing] = useState(false);
   const dragging = useRef(false);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      const el = textareaRef.current;
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+    }
+  }, [isEditing, layer?.content]);
 
   if (!layer) return null;
   const fontClass = FONT_OPTIONS.find((f) => f.id === layer.font)?.className ?? "font-sans";
+  const widthPx = ((layer.width ?? DEFAULT_WIDTH_PERCENT) / 100) * DESIGN_WIDTH;
+  const align = layer.align ?? "center";
 
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (isEditing) return;
@@ -59,38 +78,43 @@ export function TextLayer({ layerId }: { layerId: string }) {
       onPointerUp={handlePointerUp}
       onDoubleClick={(e) => {
         e.stopPropagation();
-        setIsEditing(true);
+        setEditingTextLayer(layerId);
       }}
       className={cn(
-        "pointer-events-auto absolute cursor-move whitespace-nowrap px-1 py-0.5 select-none",
+        "pointer-events-auto absolute cursor-move whitespace-pre-wrap break-words px-1 py-0.5 select-none",
         isSelected && !isEditing && "outline outline-2 outline-dashed outline-amber-400",
         fontClass
       )}
       style={{
         left: `${layer.xPercent}%`,
         top: `${layer.yPercent}%`,
+        width: widthPx,
+        textAlign: align,
         fontSize: layer.fontSize,
         color: layer.color,
         fontWeight: layer.bold ? 700 : 400,
+        lineHeight: 1.3,
         transform: `translate(-50%, -50%) rotate(${layer.rotation}deg)`,
       }}
     >
       {isEditing ? (
-        <input
+        <textarea
+          ref={textareaRef}
           autoFocus
           value={layer.content}
           onChange={(e) => updateTextLayerLive(layerId, { content: e.target.value })}
-          onBlur={() => setIsEditing(false)}
+          onFocus={(e) => e.currentTarget.select()}
+          onBlur={() => setEditingTextLayer(null)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === "Escape") e.currentTarget.blur();
+            if (e.key === "Escape") e.currentTarget.blur();
           }}
           onPointerDown={(e) => e.stopPropagation()}
-          size={Math.max(layer.content.length, 1)}
-          className="min-w-[2ch] bg-transparent text-center outline-none"
-          style={{ font: "inherit", color: "inherit" }}
+          rows={1}
+          className="block w-full resize-none overflow-hidden bg-transparent outline-none"
+          style={{ font: "inherit", color: "inherit", textAlign: "inherit", lineHeight: "inherit" }}
         />
       ) : (
-        layer.content || " "
+        layer.content || " "
       )}
     </div>
   );

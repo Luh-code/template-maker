@@ -1,6 +1,6 @@
 "use client";
 
-import { Bold, Trash2, X } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Bold, Pencil, Trash2, X } from "lucide-react";
 import { useDesignStore } from "@/store/design-store";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ export function TextLayerToolbar() {
     selectedTextLayerId ? s.design.textLayers.find((l) => l.id === selectedTextLayerId) : undefined
   );
   const setSelectedTextLayer = useDesignStore((s) => s.setSelectedTextLayer);
+  const setEditingTextLayer = useDesignStore((s) => s.setEditingTextLayer);
   const updateTextLayerLive = useDesignStore((s) => s.updateTextLayerLive);
   const beginInteraction = useDesignStore((s) => s.beginInteraction);
   const endInteraction = useDesignStore((s) => s.endInteraction);
@@ -38,7 +39,12 @@ export function TextLayerToolbar() {
         </button>
       </div>
 
-      <p className="text-xs text-neutral-400">Double-click it on the frame to edit its words.</p>
+      <Button size="sm" variant="outline" onClick={() => setEditingTextLayer(selectedTextLayerId)}>
+        <Pencil /> Edit words
+      </Button>
+      <p className="text-xs text-neutral-400">
+        Or double-click/double-tap it directly on the frame.
+      </p>
 
       <div className="flex flex-col gap-1.5">
         <Label>Font</Label>
@@ -70,6 +76,50 @@ export function TextLayerToolbar() {
           onPointerDown={beginInteraction}
           onPointerUp={endInteraction}
         />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label>Paragraph width</Label>
+        <Slider
+          min={10}
+          max={90}
+          step={1}
+          value={[layer.width ?? 34]}
+          onValueChange={([v]) => updateTextLayerLive(selectedTextLayerId, { width: v })}
+          onPointerDown={beginInteraction}
+          onPointerUp={endInteraction}
+        />
+        <p className="text-xs text-neutral-400">
+          How wide before longer sentences wrap to the next line.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label>Alignment</Label>
+        <div className="flex gap-2">
+          {([
+            { value: "left", icon: AlignLeft },
+            { value: "center", icon: AlignCenter },
+            { value: "right", icon: AlignRight },
+          ] as const).map(({ value, icon: Icon }) => (
+            <Button
+              key={value}
+              size="sm"
+              variant={(layer.align ?? "center") === value ? "primary" : "outline"}
+              className="flex-1"
+              onClick={() =>
+                mutate((d) => ({
+                  ...d,
+                  textLayers: d.textLayers.map((l) =>
+                    l.id === selectedTextLayerId ? { ...l, align: value } : l
+                  ),
+                }))
+              }
+            >
+              <Icon />
+            </Button>
+          ))}
+        </div>
       </div>
 
       <div className="flex flex-col gap-1.5">
