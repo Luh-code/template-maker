@@ -86,7 +86,8 @@ export function TextPanel() {
       <div className="flex flex-col gap-2 border-t border-neutral-200 pt-4 dark:border-neutral-800">
         <Label>Custom text fields</Label>
         <p className="text-xs text-neutral-400">
-          Add a text field anywhere on the frame — drag it into place, double-click to edit its words.
+          Add a text field, then drag it into place on the frame. Type its
+          words in the &quot;Selected text&quot; panel once it&apos;s selected.
         </p>
         <Button size="sm" variant="outline" onClick={addTextLayer}>
           <Plus /> Add text field

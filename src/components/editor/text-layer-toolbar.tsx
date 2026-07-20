@@ -1,22 +1,30 @@
 "use client";
 
-import { AlignCenter, AlignLeft, AlignRight, Bold, Pencil, Trash2, X } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Bold, Trash2, X } from "lucide-react";
 import { useDesignStore } from "@/store/design-store";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FONT_OPTIONS, type FontId } from "@/types";
 
-/** Contextual style controls for the currently-selected free-floating text field. */
+/**
+ * Contextual style controls for the currently-selected free-floating text
+ * field. Editing happens here (a normal textarea in the sidebar), not on
+ * the canvas — an editable overlay directly on the frame fights mobile
+ * browsers' native text-selection UI (long-press callout, the Cut/Copy/
+ * Paste bubble on focus) no matter how it's configured, since it's an input
+ * sitting on an absolutely-positioned, CSS-transformed surface rather than
+ * in ordinary document flow.
+ */
 export function TextLayerToolbar() {
   const selectedTextLayerId = useDesignStore((s) => s.selectedTextLayerId);
   const layer = useDesignStore((s) =>
     selectedTextLayerId ? s.design.textLayers.find((l) => l.id === selectedTextLayerId) : undefined
   );
   const setSelectedTextLayer = useDesignStore((s) => s.setSelectedTextLayer);
-  const setEditingTextLayer = useDesignStore((s) => s.setEditingTextLayer);
   const updateTextLayerLive = useDesignStore((s) => s.updateTextLayerLive);
   const beginInteraction = useDesignStore((s) => s.beginInteraction);
   const endInteraction = useDesignStore((s) => s.endInteraction);
@@ -39,12 +47,18 @@ export function TextLayerToolbar() {
         </button>
       </div>
 
-      <Button size="sm" variant="outline" onClick={() => setEditingTextLayer(selectedTextLayerId)}>
-        <Pencil /> Edit words
-      </Button>
-      <p className="text-xs text-neutral-400">
-        Or double-click/double-tap it directly on the frame.
-      </p>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="text-layer-content">Words</Label>
+        <Textarea
+          id="text-layer-content"
+          autoFocus
+          placeholder="Type your message…"
+          value={layer.content}
+          onFocus={beginInteraction}
+          onBlur={endInteraction}
+          onChange={(e) => updateTextLayerLive(selectedTextLayerId, { content: e.target.value })}
+        />
+      </div>
 
       <div className="flex flex-col gap-1.5">
         <Label>Font</Label>
