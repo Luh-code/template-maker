@@ -1,8 +1,10 @@
 "use client";
 
+import { createContext, useRef } from "react";
 import type { FrameStyle } from "@/types";
 import { useElementSize } from "@/hooks/use-element-size";
 import { cn } from "@/lib/utils";
+import { TextLayersOverlay } from "./text-layers-overlay";
 
 const TEXTURE_CLASS: Record<FrameStyle["texture"], string> = {
   none: "",
@@ -13,8 +15,15 @@ const TEXTURE_CLASS: Record<FrameStyle["texture"], string> = {
 
 /** Reference design size (matches the exporter's BASE_WIDTH) that every
  * percentage-based layout and fixed-px font size below is authored against. */
-const DESIGN_WIDTH = 1200;
-const DESIGN_HEIGHT = 800;
+export const DESIGN_WIDTH = 1200;
+export const DESIGN_HEIGHT = 800;
+
+/**
+ * Exposes the mat's real, on-screen bounding box so free-floating text
+ * layers can convert pointer coordinates into an accurate percentage
+ * position regardless of how much the preview is currently CSS-scaled down.
+ */
+export const MatRefContext = createContext<React.RefObject<HTMLDivElement | null> | null>(null);
 
 /**
  * The physical picture-frame chrome: a bevelled border around the printable
@@ -34,6 +43,7 @@ export function FrameCanvas({
   children: React.ReactNode;
 }) {
   const { ref, size } = useElementSize<HTMLDivElement>();
+  const matRef = useRef<HTMLDivElement | null>(null);
   const scale = size.width > 0 ? size.width / DESIGN_WIDTH : 0;
 
   return (
@@ -44,7 +54,10 @@ export function FrameCanvas({
       }}
     >
       <div
-        ref={ref}
+        ref={(node) => {
+          ref.current = node;
+          matRef.current = node;
+        }}
         className={cn("relative h-full w-full overflow-hidden", TEXTURE_CLASS[frame.texture])}
         style={{ backgroundColor: frame.backgroundColor }}
       >
@@ -52,17 +65,20 @@ export function FrameCanvas({
           <div className="pointer-events-none absolute inset-[4%] z-10 border border-dashed border-red-400/60" />
         )}
         {scale > 0 && (
-          <div
-            className="absolute left-0 top-0 flex flex-col p-[5%]"
-            style={{
-              width: DESIGN_WIDTH,
-              height: DESIGN_HEIGHT,
-              transform: `scale(${scale})`,
-              transformOrigin: "top left",
-            }}
-          >
-            {children}
-          </div>
+          <MatRefContext.Provider value={matRef}>
+            <div
+              className="absolute left-0 top-0"
+              style={{
+                width: DESIGN_WIDTH,
+                height: DESIGN_HEIGHT,
+                transform: `scale(${scale})`,
+                transformOrigin: "top left",
+              }}
+            >
+              <div className="flex h-full w-full flex-col p-[5%]">{children}</div>
+              <TextLayersOverlay />
+            </div>
+          </MatRefContext.Provider>
         )}
       </div>
     </div>

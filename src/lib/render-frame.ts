@@ -1,7 +1,7 @@
 import { HEART_COLS, HEART_MATRIX, HEART_ROWS, getHeartPath2D } from "@/lib/heart-layout";
 import { generateMonthGrid, getOrderedDayLabels, MONTH_NAMES } from "@/lib/calendar";
 import { generateBarcodeBars } from "@/lib/spotify-barcode";
-import { CANVAS_FONT_FAMILY, ensureFontLoaded } from "@/lib/fonts";
+import { canvasFontStack, ensureFontLoaded } from "@/lib/fonts";
 import type { DesignState, UploadedImage } from "@/types";
 
 /**
@@ -164,9 +164,8 @@ function drawCalendar(
 
   let cursorY = y;
 
-  const monthFontFamily = CANVAS_FONT_FAMILY[design.text.font];
   ctx.fillStyle = frame.accentColor;
-  ctx.font = `${20 * scale}px "${monthFontFamily}", cursive`;
+  ctx.font = `${20 * scale}px ${canvasFontStack(design.text.font)}`;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.fillText(`${monthLabel} ${calendar.year}`, x, cursorY);
@@ -273,6 +272,30 @@ function drawSpotify(
   ctx.globalAlpha = 1;
 }
 
+function drawTextLayers(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  design: DesignState,
+  scale: number
+) {
+  for (const layer of design.textLayers) {
+    if (!layer.content.trim()) continue;
+    const x = (layer.xPercent / 100) * width;
+    const y = (layer.yPercent / 100) * height;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate((layer.rotation * Math.PI) / 180);
+    ctx.fillStyle = layer.color;
+    ctx.font = `${layer.bold ? "700" : "400"} ${layer.fontSize * scale}px ${canvasFontStack(layer.font)}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(layer.content, 0, 0);
+    ctx.restore();
+  }
+}
+
 async function preloadImages(images: UploadedImage[]): Promise<Map<string, HTMLImageElement>> {
   const cache = new Map<string, HTMLImageElement>();
   await Promise.all(
@@ -295,7 +318,8 @@ export async function renderFrameToCanvas(
   design: DesignState,
   exportWidth = 3000
 ): Promise<HTMLCanvasElement> {
-  await ensureFontLoaded(design.text.font);
+  const fontIds = new Set([design.text.font, ...design.textLayers.map((l) => l.font)]);
+  await Promise.all([...fontIds].map((fontId) => ensureFontLoaded(fontId)));
 
   const width = exportWidth;
   const height = Math.round(exportWidth / ASPECT_RATIO);
@@ -319,7 +343,6 @@ export async function renderFrameToCanvas(
   const padY = height * 0.05;
   const contentW = width * 0.9;
   const contentH = height * 0.9;
-  const fontFamily = CANVAS_FONT_FAMILY[design.text.font];
 
   if (design.template === "black-anniversary") {
     const titleY = padY;
@@ -327,7 +350,7 @@ export async function renderFrameToCanvas(
     const heartSize = 16 * scale;
     const spacing = 12 * scale;
 
-    ctx.font = `${titleFontPx}px "${fontFamily}", cursive`;
+    ctx.font = `${titleFontPx}px ${canvasFontStack(design.text.font)}`;
     const primaryW = ctx.measureText(design.text.primary).width;
     const secondaryW = ctx.measureText(design.text.secondary).width;
     const totalW = primaryW + spacing + heartSize + spacing + secondaryW;
@@ -361,7 +384,7 @@ export async function renderFrameToCanvas(
     drawCalendar(ctx, rightX, spotifyY + 70 * scale, rightW, design, design.text.color, scale);
   } else {
     ctx.fillStyle = design.text.color;
-    ctx.font = `${34 * scale}px "${fontFamily}", cursive`;
+    ctx.font = `${34 * scale}px ${canvasFontStack(design.text.font)}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
     ctx.fillText(design.text.primary, padX + contentW / 2, padY);
@@ -385,6 +408,8 @@ export async function renderFrameToCanvas(
     const rightW = contentW - collageW - gap;
     drawCalendar(ctx, rightX, bodyY + bodyH * 0.42, rightW, design, "#2a2a2a", scale);
   }
+
+  drawTextLayers(ctx, width, height, design, scale);
 
   return canvas;
 }

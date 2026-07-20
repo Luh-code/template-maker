@@ -1,8 +1,10 @@
 "use client";
 
+import { Plus, Trash2 } from "lucide-react";
 import { useDesignStore } from "@/store/design-store";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FONT_OPTIONS, type FontId } from "@/types";
 
@@ -12,6 +14,11 @@ export function TextPanel() {
   const setTextLive = useDesignStore((s) => s.setTextLive);
   const beginInteraction = useDesignStore((s) => s.beginInteraction);
   const endInteraction = useDesignStore((s) => s.endInteraction);
+  const textLayers = useDesignStore((s) => s.design.textLayers);
+  const addTextLayer = useDesignStore((s) => s.addTextLayer);
+  const removeTextLayer = useDesignStore((s) => s.removeTextLayer);
+  const selectedTextLayerId = useDesignStore((s) => s.selectedTextLayerId);
+  const setSelectedTextLayer = useDesignStore((s) => s.setSelectedTextLayer);
 
   const isBlack = template === "black-anniversary";
 
@@ -74,6 +81,43 @@ export function TextPanel() {
             onChange={(e) => setTextLive({ color: e.target.value })}
           />
         </div>
+      </div>
+
+      <div className="flex flex-col gap-2 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+        <Label>Custom text fields</Label>
+        <p className="text-xs text-neutral-400">
+          Add a text field anywhere on the frame — drag it into place, double-click to edit its words.
+        </p>
+        <Button size="sm" variant="outline" onClick={addTextLayer}>
+          <Plus /> Add text field
+        </Button>
+
+        {textLayers.length > 0 && (
+          <div className="mt-1 flex flex-col gap-1">
+            {textLayers.map((layer) => (
+              <div
+                key={layer.id}
+                onClick={() => setSelectedTextLayer(layer.id)}
+                className={`flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer ${
+                  selectedTextLayerId === layer.id
+                    ? "bg-amber-100 dark:bg-amber-900/30"
+                    : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                }`}
+              >
+                <span className="truncate">{layer.content || "(empty)"}</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeTextLayer(layer.id);
+                  }}
+                  className="shrink-0 rounded p-1 text-neutral-400 hover:bg-neutral-200 hover:text-red-600 dark:hover:bg-neutral-700"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

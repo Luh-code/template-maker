@@ -26,6 +26,7 @@ export function createDefaultDesign(template: TemplateId): DesignState {
     template,
     images: [],
     tiles: createEmptyTiles(),
+    textLayers: [],
     text: isBlack
       ? {
           primary: "Partner One",

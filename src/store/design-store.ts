@@ -9,6 +9,7 @@ import type {
   PhotoTileData,
   SpotifyData,
   TemplateId,
+  TextLayerData,
   TextSettings,
   UploadedImage,
 } from "@/types";
@@ -24,6 +25,7 @@ interface DesignStore {
 
   editorTheme: "light" | "dark";
   selectedTileId: string | null;
+  selectedTextLayerId: string | null;
   fullscreenPreview: boolean;
   hasHydrated: boolean;
 
@@ -60,7 +62,12 @@ interface DesignStore {
   setSpotify: (patch: Partial<SpotifyData>) => void;
   setFrameLive: (patch: Partial<FrameStyle>) => void;
 
+  addTextLayer: () => void;
+  updateTextLayerLive: (layerId: string, patch: Partial<TextLayerData>) => void;
+  removeTextLayer: (layerId: string) => void;
+
   setSelectedTile: (tileId: string | null) => void;
+  setSelectedTextLayer: (layerId: string | null) => void;
   toggleEditorTheme: () => void;
   setFullscreenPreview: (value: boolean) => void;
   setHasHydrated: (value: boolean) => void;
@@ -75,6 +82,7 @@ export const useDesignStore = create<DesignStore>()(
       interactionCheckpoint: null,
       editorTheme: "light",
       selectedTileId: null,
+      selectedTextLayerId: null,
       fullscreenPreview: false,
       hasHydrated: false,
 
@@ -142,7 +150,9 @@ export const useDesignStore = create<DesignStore>()(
       },
 
       loadDesign: (design) => {
-        set({ design, past: [], future: [], selectedTileId: null });
+        // Backfill fields a design from an older share-link or export might predate.
+        const merged = { ...createDefaultDesign(design.template), ...design };
+        set({ design: merged, past: [], future: [], selectedTileId: null, selectedTextLayerId: null });
       },
 
       resetDesign: () => {
@@ -261,7 +271,47 @@ export const useDesignStore = create<DesignStore>()(
         get().mutateLive((d) => ({ ...d, frame: { ...d.frame, ...patch } }));
       },
 
-      setSelectedTile: (tileId) => set({ selectedTileId: tileId }),
+      addTextLayer: () => {
+        const id = uid("text");
+        get().mutate((d) => ({
+          ...d,
+          textLayers: [
+            ...d.textLayers,
+            {
+              id,
+              content: "Double-click to edit",
+              xPercent: 50,
+              yPercent: 50,
+              fontSize: 28,
+              color: d.text.color,
+              font: d.text.font,
+              bold: false,
+              rotation: 0,
+            },
+          ],
+        }));
+        set({ selectedTextLayerId: id, selectedTileId: null });
+      },
+
+      updateTextLayerLive: (layerId, patch) => {
+        get().mutateLive((d) => ({
+          ...d,
+          textLayers: d.textLayers.map((layer) =>
+            layer.id === layerId ? { ...layer, ...patch } : layer
+          ),
+        }));
+      },
+
+      removeTextLayer: (layerId) => {
+        get().mutate((d) => ({
+          ...d,
+          textLayers: d.textLayers.filter((layer) => layer.id !== layerId),
+        }));
+        set((s) => (s.selectedTextLayerId === layerId ? { selectedTextLayerId: null } : s));
+      },
+
+      setSelectedTile: (tileId) => set({ selectedTileId: tileId, selectedTextLayerId: null }),
+      setSelectedTextLayer: (layerId) => set({ selectedTextLayerId: layerId, selectedTileId: null }),
       toggleEditorTheme: () =>
         set((s) => ({ editorTheme: s.editorTheme === "light" ? "dark" : "light" })),
       setFullscreenPreview: (value) => set({ fullscreenPreview: value }),
@@ -270,6 +320,21 @@ export const useDesignStore = create<DesignStore>()(
     {
       name: "memory-frame-designer:design",
       partialize: (s) => ({ design: s.design, editorTheme: s.editorTheme }),
+      // Backfills any fields added to DesignState after a design was already
+      // saved to localStorage (e.g. `textLayers`), so older saved designs
+      // don't crash on fields they predate.
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<DesignStore> | undefined;
+        if (!persisted?.design) return currentState;
+        return {
+          ...currentState,
+          ...persisted,
+          design: {
+            ...createDefaultDesign(persisted.design.template ?? currentState.design.template),
+            ...persisted.design,
+          },
+        };
+      },
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },

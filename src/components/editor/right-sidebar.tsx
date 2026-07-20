@@ -3,6 +3,7 @@
 import { useDesignStore } from "@/store/design-store";
 import { ImageThumbnail } from "./image-thumbnail";
 import { TileToolbar } from "./tile-toolbar";
+import { TextLayerToolbar } from "./text-layer-toolbar";
 
 export function RightSidebar() {
   const images = useDesignStore((s) => s.design.images);
@@ -10,6 +11,7 @@ export function RightSidebar() {
   return (
     <div className="flex h-full flex-col gap-4 overflow-y-auto p-4 thin-scrollbar">
       <TileToolbar />
+      <TextLayerToolbar />
 
       <div>
         <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
