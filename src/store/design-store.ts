@@ -290,7 +290,9 @@ export const useDesignStore = create<DesignStore>()(
             ...d.textLayers,
             {
               id,
-              content: "Double-click to edit",
+              // Starts empty (not a placeholder string) since adding a field
+              // immediately opens it for editing — nothing to clear first.
+              content: "",
               xPercent: 50,
               yPercent: 50,
               width: 34,

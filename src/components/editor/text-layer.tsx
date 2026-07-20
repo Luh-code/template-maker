@@ -112,7 +112,6 @@ export function TextLayer({ layerId }: { layerId: string }) {
           autoFocus
           value={layer.content}
           onChange={(e) => updateTextLayerLive(layerId, { content: e.target.value })}
-          onFocus={(e) => e.currentTarget.select()}
           onBlur={() => setEditingTextLayer(null)}
           onKeyDown={(e) => {
             if (e.key === "Escape") e.currentTarget.blur();
