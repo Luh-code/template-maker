@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FONT_OPTIONS, type FontId } from "@/types";
+import { TextLayerToolbar } from "../text-layer-toolbar";
 
 export function TextPanel() {
   const template = useDesignStore((s) => s.design.template);
@@ -86,8 +87,8 @@ export function TextPanel() {
       <div className="flex flex-col gap-2 border-t border-neutral-200 pt-4 dark:border-neutral-800">
         <Label>Custom text fields</Label>
         <p className="text-xs text-neutral-400">
-          Add a text field, then drag it into place on the frame. Type its
-          words in the &quot;Selected text&quot; panel once it&apos;s selected.
+          Add a text field, then drag it into place on the frame. Select one
+          below to type its words and style it.
         </p>
         <Button size="sm" variant="outline" onClick={addTextLayer}>
           <Plus /> Add text field
@@ -119,6 +120,10 @@ export function TextPanel() {
             ))}
           </div>
         )}
+
+        <div className="mt-2">
+          <TextLayerToolbar />
+        </div>
       </div>
     </div>
   );

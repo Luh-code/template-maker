@@ -2,6 +2,7 @@
 
 import { useDesignStore } from "@/store/design-store";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { LeftPanelTab } from "@/store/design-store";
 import { UploadPanel } from "./panels/upload-panel";
 import { CalendarPanel } from "./panels/calendar-panel";
 import { TextPanel } from "./panels/text-panel";
@@ -10,11 +11,17 @@ import { StylePanel } from "./panels/style-panel";
 
 export function LeftSidebar() {
   const template = useDesignStore((s) => s.design.template);
+  const leftPanelTab = useDesignStore((s) => s.leftPanelTab);
+  const setLeftPanelTab = useDesignStore((s) => s.setLeftPanelTab);
   const isBlack = template === "black-anniversary";
 
   return (
     <div className="flex h-full flex-col overflow-y-auto p-4 thin-scrollbar">
-      <Tabs defaultValue="upload" className="flex flex-col">
+      <Tabs
+        value={leftPanelTab}
+        onValueChange={(v) => setLeftPanelTab(v as LeftPanelTab)}
+        className="flex flex-col"
+      >
         <TabsList className="grid w-full grid-cols-3 gap-1 h-auto">
           <TabsTrigger value="upload">Photos</TabsTrigger>
           <TabsTrigger value="text">Text</TabsTrigger>

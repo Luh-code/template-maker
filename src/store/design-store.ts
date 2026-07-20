@@ -16,6 +16,8 @@ import type {
 
 const HISTORY_LIMIT = 60;
 
+export type LeftPanelTab = "upload" | "text" | "calendar" | "spotify" | "style";
+
 interface DesignStore {
   design: DesignState;
   past: DesignState[];
@@ -29,6 +31,10 @@ interface DesignStore {
   /** Which mobile/tablet bottom sheet is open (irrelevant on desktop, where
    * both sidebars are always visible and this is simply never read). */
   mobilePanel: "left" | "right" | null;
+  /** Active tab of the left sidebar — selecting a text field switches this
+   * to "text" so its controls (which live there, not in a separate panel)
+   * are immediately visible. */
+  leftPanelTab: LeftPanelTab;
   fullscreenPreview: boolean;
   hasHydrated: boolean;
 
@@ -72,6 +78,7 @@ interface DesignStore {
   setSelectedTile: (tileId: string | null) => void;
   setSelectedTextLayer: (layerId: string | null) => void;
   setMobilePanel: (panel: "left" | "right" | null) => void;
+  setLeftPanelTab: (tab: LeftPanelTab) => void;
   toggleEditorTheme: () => void;
   setFullscreenPreview: (value: boolean) => void;
   setHasHydrated: (value: boolean) => void;
@@ -88,6 +95,7 @@ export const useDesignStore = create<DesignStore>()(
       selectedTileId: null,
       selectedTextLayerId: null,
       mobilePanel: null,
+      leftPanelTab: "upload",
       fullscreenPreview: false,
       hasHydrated: false,
 
@@ -302,7 +310,8 @@ export const useDesignStore = create<DesignStore>()(
         set({
           selectedTextLayerId: id,
           selectedTileId: null,
-          mobilePanel: "right",
+          mobilePanel: "left",
+          leftPanelTab: "text",
         });
       },
 
@@ -337,9 +346,13 @@ export const useDesignStore = create<DesignStore>()(
         set((s) => ({
           selectedTextLayerId: layerId,
           selectedTileId: null,
-          mobilePanel: layerId ? "right" : s.mobilePanel,
+          // Text controls live in the left sidebar's "Text" tab, not a
+          // separate panel — surface that instead of the right sheet.
+          mobilePanel: layerId ? "left" : s.mobilePanel,
+          leftPanelTab: layerId ? "text" : s.leftPanelTab,
         })),
       setMobilePanel: (panel) => set({ mobilePanel: panel }),
+      setLeftPanelTab: (tab) => set({ leftPanelTab: tab }),
       toggleEditorTheme: () =>
         set((s) => ({ editorTheme: s.editorTheme === "light" ? "dark" : "light" })),
       setFullscreenPreview: (value) => set({ fullscreenPreview: value }),

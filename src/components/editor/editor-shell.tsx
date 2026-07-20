@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { X } from "lucide-react";
-import { useDesignStore } from "@/store/design-store";
+import { useDesignStore, type LeftPanelTab } from "@/store/design-store";
 import { useUndoRedoShortcuts } from "@/hooks/use-undo-redo-shortcuts";
 import { Header } from "./header";
 import { LeftSidebar } from "./left-sidebar";
@@ -11,13 +11,21 @@ import { FramePreview } from "./frame-preview";
 import { FullscreenPreview } from "./fullscreen-preview";
 import { cn } from "@/lib/utils";
 
+const LEFT_TAB_LABELS: Record<LeftPanelTab, string> = {
+  upload: "Photos",
+  text: "Text",
+  calendar: "Calendar",
+  spotify: "Spotify",
+  style: "Frame Style",
+};
+
 export function EditorShell() {
   useUndoRedoShortcuts();
   const editorTheme = useDesignStore((s) => s.editorTheme);
   const selectedTileId = useDesignStore((s) => s.selectedTileId);
-  const selectedTextLayerId = useDesignStore((s) => s.selectedTextLayerId);
   const mobilePanel = useDesignStore((s) => s.mobilePanel);
   const setMobilePanel = useDesignStore((s) => s.setMobilePanel);
+  const leftPanelTab = useDesignStore((s) => s.leftPanelTab);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", editorTheme === "dark");
@@ -56,12 +64,10 @@ export function EditorShell() {
           <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-2 dark:border-neutral-800">
             <span className="text-sm font-semibold">
               {mobilePanel === "left"
-                ? "Edit design"
+                ? LEFT_TAB_LABELS[leftPanelTab]
                 : selectedTileId
                   ? "Selected tile"
-                  : selectedTextLayerId
-                    ? "Selected text"
-                    : "Uploaded photos"}
+                  : "Uploaded photos"}
             </span>
             <button
               onClick={() => setMobilePanel(null)}
