@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+/* Editor dark mode is a manual per-user toggle (design-store `editorTheme`),
+   not the OS preference, so `dark:` variants key off a `.dark` class. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Handwritten font utilities used by the frame text settings. */
+.font-handwritten-1 { font-family: var(--font-great-vibes), cursive; }
+.font-handwritten-2 { font-family: var(--font-dancing-script), cursive; }
+.font-handwritten-3 { font-family: var(--font-parisienne), cursive; }
+.font-handwritten-4 { font-family: var(--font-sacramento), cursive; }
+
+/* Slim, unobtrusive scrollbars for the editor panels. */
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 120, 120, 0.5) transparent;
+}
+.thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(120, 120, 120, 0.5);
+  border-radius: 9999px;
+}
+
+/* Checkerboard used behind empty photo-tile placeholders. */
+.placeholder-checker {
+  background-image:
+    linear-gradient(45deg, rgba(120, 120, 120, 0.12) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(120, 120, 120, 0.12) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(120, 120, 120, 0.12) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(120, 120, 120, 0.12) 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+}
+
+/* Frame background textures (bonus feature). */
+.texture-linen {
+  background-image: repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+}
+.texture-paper {
+  background-image: radial-gradient(rgba(120, 120, 120, 0.08) 1px, transparent 1px);
+  background-size: 4px 4px;
+}
+.texture-grain {
+  background-image: radial-gradient(rgba(120, 120, 120, 0.15) 0.6px, transparent 0.6px);
+  background-size: 2.5px 2.5px;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
