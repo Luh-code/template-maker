@@ -47,6 +47,10 @@ export function TextLayer({ layerId }: { layerId: string }) {
 
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (isEditing) return;
+    // Without this, a touch-and-hold on mobile is indistinguishable from a
+    // long-press, which opens the browser's native text callout (Copy /
+    // Look Up / Share…) instead of letting us handle the drag ourselves.
+    e.preventDefault();
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
     dragging.current = true;
@@ -80,8 +84,12 @@ export function TextLayer({ layerId }: { layerId: string }) {
         e.stopPropagation();
         setEditingTextLayer(layerId);
       }}
+      onContextMenu={(e) => {
+        if (!isEditing) e.preventDefault();
+      }}
       className={cn(
-        "pointer-events-auto absolute cursor-move whitespace-pre-wrap break-words px-1 py-0.5 select-none",
+        "pointer-events-auto absolute whitespace-pre-wrap break-words px-1 py-0.5",
+        !isEditing && "cursor-move touch-none select-none",
         isSelected && !isEditing && "outline outline-2 outline-dashed outline-amber-400",
         fontClass
       )}
@@ -95,6 +103,7 @@ export function TextLayer({ layerId }: { layerId: string }) {
         fontWeight: layer.bold ? 700 : 400,
         lineHeight: 1.3,
         transform: `translate(-50%, -50%) rotate(${layer.rotation}deg)`,
+        WebkitTouchCallout: isEditing ? "default" : "none",
       }}
     >
       {isEditing ? (
